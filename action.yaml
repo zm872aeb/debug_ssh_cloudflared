@@ -1,0 +1,48 @@
+name: 'Debug via SSH'
+description: 'SSH to a GitHub Actions runner using ngrok'
+branding:
+  icon: 'terminal'  
+  color: 'green'
+inputs:
+  SSH_PASS:
+    description: 'Password for SSH session'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Check inputs
+      run: |
+        if [ -z "${{ inputs.SSH_PASS }}" ]
+        then
+          echo "SSH_PASS needs to be passed in the 'with' field."
+          exit 1
+        fi
+        shell: bash
+
+    - name: Start SSH session
+      run: |
+        printf "# Preparing environment..."
+          whoami > ssh_user
+          echo $ssh_user   
+        echo "# Change the SSH user password"
+          echo "${{ secrets.SSH_PASS }}`n${{ secrets.SSH_PASS }}" | sudo passwd $(cat ssh_user)
+        shell: pwsh
+        
+    - name: Start Cloudflared
+      run: |
+        echo "# Install Cloudflared"
+          curl --location --silent  https://github.com/cloudflare/cloudflared/releases/download/2024.6.1/cloudflared-linux-amd64 --output cloudflared
+          chmod +x ./cloudflared
+        echo "# Starting Cloudflared..."
+          nohup ./cloudflared tunnel --no-autoupdate --protocol http2 --url tcp://localhost:22 2>&1 | tee cloudflared.log | sed -u 's/^/cloudflared: /' &
+          cloudflared_pid=$!
+        printf " [DONE]\n\n"
+        
+        url=$(head -1 <(tail -f cloudflared.log | grep --line-buffered -o 'https://.*\.trycloudflare.com'))
+        echo "#########################################"
+        echo $url
+        echo "#########################################"
+        tmux wait-for channel
+        echo 'Session ended'
+        kill "$cloudflared_pid"
+        shell: bash
