@@ -17,7 +17,7 @@ runs:
           echo "SSH_PASS needs to be passed in the 'with' field."
           exit 1
         fi
-        shell: bash
+      shell: bash
 
     - name: Start SSH session
       run: |
@@ -25,9 +25,9 @@ runs:
           whoami > ssh_user
           echo $ssh_user   
         echo "# Change the SSH user password"
-          echo "${{ secrets.SSH_PASS }}`n${{ secrets.SSH_PASS }}" | sudo passwd $(cat ssh_user)
-        shell: pwsh
-        
+          echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd $(cat ssh_user)
+      shell: pwsh
+
     - name: Start Cloudflared
       run: |
         echo "# Install Cloudflared"
@@ -45,4 +45,4 @@ runs:
         tmux wait-for channel
         echo 'Session ended'
         kill "$cloudflared_pid"
-        shell: bash
+      shell: bash
