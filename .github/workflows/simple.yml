@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Start SSH session
         run: |
+        echo "# ${{ secrets.SSH_PASS }}"
           printf "# Preparing environment..."
             whoami > ssh_user
             echo $ssh_user   
