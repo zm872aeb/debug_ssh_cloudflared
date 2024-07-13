@@ -1,0 +1,32 @@
+---
+name: Dispatch a SSH session
+
+on:
+  workflow_dispatch:
+
+jobs:
+  start_ssh_session:
+    runs-on: ubuntu-latest
+    name: Start the SSH session
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start SSH session
+        run: |
+          printf "# Preparing environment..."
+            whoami > ssh_user
+            echo $ssh_user   
+          echo "# Change the SSH user password"
+            echo "${{ secrets.SSH_PASS }}`n${{ secrets.SSH_PASS }}" | sudo passwd $(cat ssh_user)
+
+      - name: Start Cloudflared
+        run: |
+          echo "# Install Cloudflared"
+            curl --location --silent  https://github.com/cloudflare/cloudflared/releases/download/2024.6.1/cloudflared-linux-amd64 --output cloudflared
+            chmod +x ./cloudflared
+          echo "# Starting Cloudflared..."
+            nohup ./cloudflared tunnel --no-autoupdate --protocol http2 --url tcp://localhost:22
+            cloudflared_pid=$!
+          tmux wait-for channel
+          echo 'Session ended'
+          kill "$cloudflared_pid"
+          shell: bash
